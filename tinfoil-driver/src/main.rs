@@ -2,10 +2,9 @@ extern crate serial;
 
 use std::env;
 use std::io;
-use std::thread;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
-use debouncr::{debounce_5, Debouncer, Edge};
+use debouncr::{debounce_5, Edge};
 use serial::prelude::*;
 use xdotool::command::options;
 use xdotool::mouse::{click_down, click_up, Button};
@@ -28,17 +27,15 @@ fn interact<T: SerialPort>(port: &mut T) -> io::Result<()> {
 	})?;
 
 	port.set_timeout(Duration::from_millis(1000))?;
-	let mut click_combo = 0;
 	let mut debouncer = debounce_5();
 	loop {
-		let mut last = 0u8;
 		let mut buf = vec![];
 		loop {
-			last = read_byte(port)?;
-			if last == 13 || last == 10 {
+			let byte = read_byte(port)?;
+			if byte == 13 || byte == 10 {
 				break;
 			} else {
-				buf.push(last);
+				buf.push(byte);
 			}
 		}
 		let nstr = String::from_utf8(buf).unwrap();
@@ -63,17 +60,11 @@ fn interact<T: SerialPort>(port: &mut T) -> io::Result<()> {
 			None => {}
 		}
 	}
-
-	Ok(())
 }
 
-fn read_byte(port: &mut SerialPort) -> io::Result<u8> {
+fn read_byte(port: &mut dyn SerialPort) -> io::Result<u8> {
 	let mut buf = vec![0; 1];
 	port.read(&mut buf)?;
 
 	Ok(*buf.get(0).unwrap())
 }
-/*				thread::spawn(move || {
-					click(Button::Left, OptionVec::<options::ClickOption>::new());
-				});
-*/
